@@ -44,6 +44,8 @@ class ALU_monitor extends uvm_monitor #(ALU_seq_item) mon_ap;
             seq_itm.Op = inf.Opcode;
             seq_itm.Res = inf.Result;
 
+            `uvm_info(get_type_name(), $sformatf("Observed: A=%0d B=%0d Op=%0d -> Result=%0d", seq_itm.A, seq_itm.B, seq_itm.Op, seq_itm.Res), UVM_HIGH)
+
             mon_ap.write(seq_itm);
         end
       
