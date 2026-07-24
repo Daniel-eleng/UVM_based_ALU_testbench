@@ -1,7 +1,7 @@
 `include "uvm_macros.svh"
 import uvm_pkg::*;
 
-class ALU_monitor extends uvm_monitor;
+class ALU_monitor extends uvm_monitor #(ALU_seq_item) mon_ap;
 
     `uvm_component_utils(ALU_monitor)
 
@@ -17,6 +17,8 @@ class ALU_monitor extends uvm_monitor;
 
         super.build_phase(phase);
 
+        mon_ap = new("mon_ap",this);
+
         if(!uvm_config_db#(virtual ALU_inf) :: get(this,"*","inf",inf))
 
             `uvm_fatal("NOVIF","Interface not found")
@@ -31,6 +33,10 @@ class ALU_monitor extends uvm_monitor;
 
         forever begin
             
+            @(inf.A or inf.B or inf.Opcode);
+            
+            #1;
+
             seq_itm = ALU_seq_item :: type_id :: create("seq_itm",this);
 
             seq_itm.A = inf.A;
