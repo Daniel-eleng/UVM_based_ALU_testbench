@@ -27,7 +27,10 @@ class ALU_coverage extends uvm_subscriber#(ALU_seq_item);
             bins max = {15};
             bins mid = {[1 : 14]};
         }
-        all_cross : cross Op_cp , A_cp , B_cp;
+        op_a_cross : cross Op_cp , A_cp;
+        op_b_cross : cross Op_cp , B_cp {
+            ignore_bins logic_op = binsof(Op_cp) intersect {LOGIC_NOT};
+        }
     endgroup
 
     function void write(ALU_seq_item seq_itm);
