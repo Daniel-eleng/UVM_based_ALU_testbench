@@ -20,6 +20,8 @@ class ALU_ref_model;
         bit[7:0] res;
         bit [3:0] gray_bin_temp;
         bit [4:0] sub_temp;
+        bit [3:0] logic_res;
+        bit [3:0] shift_res;
 
         case (op)
             ADD : res = a + b;
@@ -37,12 +39,27 @@ class ALU_ref_model;
                 gray_bin_temp[0] = gray_bin_temp[1] ^ a[0];
                 res = {4'd0,gray_bin_temp};
             end
-            SHIFT_L : res = (a << b[1:0]);
+            SHIFT_L : begin
+                shift_res = (a << b[1:0]);
+                res = {4'd0, shift_res};
+            end
             SHIFT_R : res = (a >> b[1:0]);
-            LOGIC_NAND : res = ~(a & b);
-            LOGIC_NOR : res = ~(a | b);
-            LOGIC_XNOR : res = ~(a ^ b);
-            LOGIC_NOT : res = ~a;
+            LOGIC_NAND : begin
+                logic_res = ~(a & b);
+                res = {4'd0, logic_res};
+            end
+            LOGIC_NOR : begin
+                logic_res = ~(a | b);
+                res = {4'd0, logic_res};
+            end
+            LOGIC_XNOR : begin
+                logic_res = ~(a ^ b);
+                res = {4'd0, logic_res};
+            end
+            LOGIC_NOT : begin
+                logic_res = ~a;
+                res = {4'd0, logic_res};
+            end
             default: res = 8'd0;
         endcase
 
