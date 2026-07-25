@@ -9,6 +9,8 @@ class ALU_env extends uvm_env;
 
     ALU_scoreboard scrb;
 
+    ALU_coverage cov;
+
     function new(string name = "ALU_env",uvm_component parent);
  
         super.new(name,parent);
@@ -22,6 +24,8 @@ class ALU_env extends uvm_env;
         agn = ALU_agent :: type_id :: create("agn",this);
 
         scrb = ALU_scoreboard :: type_id :: create("scrb",this);
+
+        cov = ALU_coverage :: type_id :: create("cov",this);
       
     endfunction
 
@@ -30,6 +34,8 @@ class ALU_env extends uvm_env;
         super.connect_phase(phase);
 
         agn.mon.mon_ap.connect(scrb.imp);
+
+        agn.mon.mon_ap.connect(cov.analysis_export);
       
     endfunction
   
