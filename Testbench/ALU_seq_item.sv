@@ -5,7 +5,7 @@ class ALU_seq_item extends uvm_sequence_item;
 
     rand logic [3:0] A;
     rand logic [3:0] B;
-    rand logic [3:0] Op;
+    rand alu_op_e Op;
     logic [7:0] Res;
 
     `uvm_object_utils(Ram_seq_item)
