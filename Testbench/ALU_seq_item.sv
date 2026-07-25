@@ -8,9 +8,9 @@ class ALU_seq_item extends uvm_sequence_item;
     rand alu_op_e Op;
     logic [7:0] Res;
 
-    `uvm_object_utils(Ram_seq_item)
+    `uvm_object_utils(ALU_seq_item)
 
-    function new(string name = "Ram_seq_item");
+    function new(string name = "ALU_seq_item");
  
         super.new(name);
  

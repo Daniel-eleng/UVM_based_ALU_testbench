@@ -11,11 +11,11 @@ typedef enum logic [3:0] {
   LOGIC_NOR     = 4'b1001,
   LOGIC_XNOR    = 4'b1010,
   LOGIC_NOT    = 4'b1011
-} alu_op_e;
+} ALU_op_e;
 
-class alu_ref_model;
+class ALU_ref_model;
 
-    function bit[7:0] ALU_calc(bit[3:0] a, bit[3:0] b, alu_op_e op);
+    function bit[7:0] ALU_calc(bit[3:0] a, bit[3:0] b, ALU_op_e op);
 
         bit[7:0] res;
         bit [3:0] gray_bin_temp;
