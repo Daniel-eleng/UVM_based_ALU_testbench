@@ -1,4 +1,5 @@
 import ALU_pkg::*;
+import uvm_pkg::*;
 
 module ALU_top;
 

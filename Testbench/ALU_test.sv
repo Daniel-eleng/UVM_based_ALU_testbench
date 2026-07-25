@@ -31,6 +31,8 @@ class ALU_test extends uvm_test;
 
         seq.start(envir.agn.seqr);
 
+        #10;
+
         phase.drop_objection(this);
       
     endtask
