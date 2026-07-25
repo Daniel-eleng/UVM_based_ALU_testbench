@@ -19,6 +19,7 @@ class ALU_ref_model;
 
         bit[7:0] res;
         bit [3:0] gray_bin_temp;
+        bit [4:0] sub_temp;
 
         case (op)
             ADD : res = a + b;

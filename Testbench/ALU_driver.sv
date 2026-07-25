@@ -25,8 +25,6 @@ class ALU_driver extends uvm_driver #(ALU_seq_item);
 
     task run_phase(uvm_phase phase);
 
-        super.run_phase(phase);
-
         ALU_seq_item sq_itm;
 
         forever begin

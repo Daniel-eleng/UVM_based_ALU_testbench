@@ -1,9 +1,11 @@
 `include "uvm_macros.svh"
 import uvm_pkg::*;
 
-class ALU_monitor extends uvm_monitor #(ALU_seq_item) mon_ap;
+class ALU_monitor extends uvm_monitor;
 
     `uvm_component_utils(ALU_monitor)
+    
+    uvm_analysis_port#(ALU_seq_item) mon_ap;
 
     virtual ALU_inf inf;
 
@@ -26,8 +28,6 @@ class ALU_monitor extends uvm_monitor #(ALU_seq_item) mon_ap;
     endfunction
 
     task run_phase(uvm_phase phase);
-
-        super.run_phase(phase);
 
         ALU_seq_item seq_itm;
 
