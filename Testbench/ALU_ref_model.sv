@@ -22,7 +22,10 @@ class alu_ref_model;
 
         case (op)
             ADD : res = a + b;
-            SUB : res = a - b;
+            SUB : begin
+                sub_temp = {1'b0,a} + {1'b0,~b} + 5'b1;
+                res = {3'b000, sub_temp[4], sub_temp[3:0]};
+            end
             MUL : res = a * b;
             COMPARE : res = {5'd0,(a<b),(a==b),(a>b)};
             BIN_TO_GRAY : res = {4'd0,a ^ (a>>1)};
