@@ -57,7 +57,11 @@ A second, related lesson came from the `SUB` operation: instead of using SystemV
 
 ## Testbench validation via mutation testing (bug injection)
 
-_(planned, following the same methodology used in the [RAM project](https://github.com/Daniel-eleng/RAM_FIFO_Project): a set of `bug-injection/_`branches, each starting from a clean copy of`main` and introducing exactly one deliberate RTL fault, to confirm the testbench actually detects functional bugs rather than passing by construction. This section will be updated with the branch table and pass-rate results once completed.)\*
+Following the same methodology used in the [RAM project](https://github.com/Daniel-eleng/RAM_FIFO_Project), each deliberate RTL fault lives on its own `bug-injection/*` branch, starting from a clean copy of `main`, and is never merged back — the branch exists only as proof that the UVM testbench actually detects the fault, not as part of the shipped design. All results below were produced by running the exact same `ALU_test` (1000 constrained-random transactions) against the faulty branch, with no changes to the testbench itself.
+
+| Branch                          | Injected fault                                                                                                                                                                                                                                                                                 | Result                                                                                                                                                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bug-injection/mux-opcode-swap` | In the top-level `case (Opcode)` mux: `MUL` (`0010`) ↔ `COMPARE` (`0011`) swapped, and `SHIFT_R` (`0111`) ↔ `LOGIC_NAND` (`1000`) swapped — each pair routes a _different_ internal signal to `Result`, so the mutation is guaranteed to be observable (see note below on equivalent mutants). | **676 / 1000 PASS, 324 FAIL** — all failures isolated to the four affected opcodes (`MUL`, `COMPARE`, `SHIFT_R`, `LOGIC_NAND`); the other 8 operations kept passing at 100%, confirming the fault was correctly localized rather than corrupting the whole environment. |
 
 ## Project structure
 
@@ -105,9 +109,21 @@ This project uses branches to isolate experiments from the main, verified codeba
 
 ## Results
 
+## Main
+
 ### Summary
 
 ![Summary](results/main/Summary.png)
+
+### Example transactions per operation
+
+![Operations](results/main/Operations.png)
+
+## Branch:mux-opcode-swap
+
+### Summary
+
+![Summary](results/opcode_swap/Summary.png)
 
 ### Example transactions per operation
 
