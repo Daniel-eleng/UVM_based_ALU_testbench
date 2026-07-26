@@ -35,6 +35,7 @@ module Logic_4bit(
             
             default: Y = 4'b0000;
         endcase
+        Y[0] = 1'b0;
     end
 
 endmodule
