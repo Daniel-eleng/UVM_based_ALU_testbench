@@ -32,7 +32,7 @@ class ALU_driver extends uvm_driver #(ALU_seq_item);
             
             seq_item_port.get_next_item(sq_itm);
 
-            `uvm_do_callbacks(ALU_driver,ALU_driver_cb,modify_pkt(seq_itm))
+            `uvm_do_callbacks(ALU_driver,ALU_driver_cb,modify_pkt(sq_itm))
 
             inf.A = sq_itm.A;
             inf.B = sq_itm.B;
