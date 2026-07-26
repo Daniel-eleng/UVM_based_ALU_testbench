@@ -59,9 +59,12 @@ A second, related lesson came from the `SUB` operation: instead of using SystemV
 
 Following the same methodology used in the [RAM project](https://github.com/Daniel-eleng/RAM_FIFO_Project), each deliberate RTL fault lives on its own `bug-injection/*` branch, starting from a clean copy of `main`, and is never merged back — the branch exists only as proof that the UVM testbench actually detects the fault, not as part of the shipped design. All results below were produced by running the exact same `ALU_test` (1000 constrained-random transactions) against the faulty branch, with no changes to the testbench itself.
 
-| Branch                          | Injected fault                                                                                                                                                                                                                                                                                 | Result                                                                                                                                                                                                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bug-injection/mux-opcode-swap` | In the top-level `case (Opcode)` mux: `MUL` (`0010`) ↔ `COMPARE` (`0011`) swapped, and `SHIFT_R` (`0111`) ↔ `LOGIC_NAND` (`1000`) swapped — each pair routes a _different_ internal signal to `Result`, so the mutation is guaranteed to be observable (see note below on equivalent mutants). | **676 / 1000 PASS, 324 FAIL** — all failures isolated to the four affected opcodes (`MUL`, `COMPARE`, `SHIFT_R`, `LOGIC_NAND`); the other 8 operations kept passing at 100%, confirming the fault was correctly localized rather than corrupting the whole environment. |
+| Branch                              | Injected fault                                                                                                                                                                                                                                                                                 | Result                                                                                                                                                                                                                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bug-injection/mux-opcode-swap`     | In the top-level `case (Opcode)` mux: `MUL` (`0010`) ↔ `COMPARE` (`0011`) swapped, and `SHIFT_R` (`0111`) ↔ `LOGIC_NAND` (`1000`) swapped — each pair routes a _different_ internal signal to `Result`, so the mutation is guaranteed to be observable (see note below on equivalent mutants). | **676 / 1000 PASS, 324 FAIL** — all failures isolated to the four affected opcodes (`MUL`, `COMPARE`, `SHIFT_R`, `LOGIC_NAND`); the other 8 operations kept passing at 100%, confirming the fault was correctly localized rather than corrupting the whole environment. |
+| `bug-injection/logic-stuck-at-bit0` | In `Logic_4bit`: `Y[0]` forced to `1'b0` after the `case` block, regardless of the selected operation — a classic stuck-at-0 fault, applied uniformly across all four logic operations (`NAND`, `NOR`, `XNOR`, `NOT`).                                                                         | **845 / 1000 PASS, 155 FAIL** — failures confined to the four logic operations, but only on the subset of transactions where the _correct_ LSB happened to be `1` (see note below on partial detectability). The other 8 operations kept passing at 100%.               |
+
+**Note on partial detectability of stuck-at faults:** unlike the mux swap above, a stuck-at fault on a single bit is only observable on inputs where that bit's correct value differs from the stuck value. For example, `LOGIC_XNOR` with `A=15, B=8` correctly produces `Res=8` (`4'b1000`) — the LSB is already `0`, so forcing it to `0` changes nothing, and the transaction passes despite the fault being present. This is expected, not a testbench gap: it's a concrete illustration of why mutation testing reports a _pass rate_, not a binary detected/not-detected result, and why a single directed test is not enough to guarantee a stuck-at fault is caught — only broad, randomized coverage across many input combinations makes detection reliable.
 
 ## Project structure
 
@@ -127,4 +130,14 @@ This project uses branches to isolate experiments from the main, verified codeba
 
 ### Example transactions per operation
 
-![Operations](results/main/Operations.png)
+![Operations](results/opcode_swap/Operations.png)
+
+## Branch:stuck_at_bit
+
+### Summary
+
+![Summary](results/stuck_at_bit/Summary.png)
+
+### Example transactions per operation
+
+![Operations](results/stuck_at_bit/Operations.png)
