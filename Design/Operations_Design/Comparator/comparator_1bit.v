@@ -21,8 +21,8 @@
 
 
 module comparator_1bit(input A, input B, output gt, output lt, output eq);
-        assign gt = A &~ B;
+        /*gt*/assign lt = A &~ B;
         assign eq = A ~^ B;
-        assign lt = ~A & B;
+        /*lt*/assign gt = ~A & B;
 
 endmodule
