@@ -17,7 +17,7 @@ class ALU_error_inject_cb extends ALU_driver_cb;
             seq_itm.A = $urandom_range(0,15);
         
         if($urandom_range(0,10) == 0)
-            seq_itm.Op = alu_op_e'(4'b1100);
+            seq_itm.Op = ALU_op_e'(4'b1100);
       
     endtask
   

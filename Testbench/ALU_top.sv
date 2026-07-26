@@ -14,6 +14,7 @@ module ALU_top;
 
         uvm_config_db#(virtual ALU_inf)::set(null, "*", "inf", inf);
         run_test("ALU_test");
+        //run_test("ALU_error_inject_test");
 
     end
 

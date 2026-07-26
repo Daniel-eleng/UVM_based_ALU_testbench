@@ -18,6 +18,12 @@ class ALU_error_inject_test extends ALU_test;
         super.build_phase(phase);
 
         err_cb = ALU_error_inject_cb :: type_id :: create("err_cb");
+      
+    endfunction
+
+    function void connect_phase(uvm_phase phase);
+
+        super.connect_phase(phase);
 
         uvm_callbacks#(ALU_driver,ALU_driver_cb)::add(envir.agn.drv,err_cb);
       

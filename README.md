@@ -67,26 +67,47 @@ Following the same methodology used in the [RAM project](https://github.com/Dani
 
 **Note on partial detectability of stuck-at faults:** unlike the mux swap above, a stuck-at fault on a single bit is only observable on inputs where that bit's correct value differs from the stuck value. For example, `LOGIC_XNOR` with `A=15, B=8` correctly produces `Res=8` (`4'b1000`) — the LSB is already `0`, so forcing it to `0` changes nothing, and the transaction passes despite the fault being present. This is expected, not a testbench gap: it's a concrete illustration of why mutation testing reports a _pass rate_, not a binary detected/not-detected result, and why a single directed test is not enough to guarantee a stuck-at fault is caught — only broad, randomized coverage across many input combinations makes detection reliable.
 
+## Stimulus-level error injection via UVM callbacks
+
+Mutation testing (above) validates the testbench against **RTL faults**. As a separate, complementary technique, this project also demonstrates **stimulus-level negative testing** using the `uvm_callback` mechanism — injecting invalid or corrupted data at the driver, without touching the DUT or the base testbench at all.
+
+**Why callbacks instead of just writing another sequence:** a callback lets error-injection behavior be attached to (or removed from) a specific driver instance at runtime, without creating a new driver subclass or modifying `ALU_driver`'s source. This mirrors how verification IP is extended in practice, where the base component is often not meant to be edited directly.
+
+**Implementation:**
+
+- `ALU_driver_cb` — a `uvm_callback` base class declaring an empty `modify_pkt(ALU_seq_item seq_itm)` hook.
+- `ALU_driver` registers the callback type (`` `uvm_register_cb(ALU_driver, ALU_driver_cb)``) and invokes the hook (`` `uvm_do_callbacks(ALU_driver, ALU_driver_cb, modify_pkt(sq_itm))``) **after** receiving a transaction from the sequencer but **before** driving it onto the interface — so any modification made by an attached callback actually reaches the DUT.
+- `ALU_error_inject_cb extends ALU_driver_cb` overrides the hook to, with low probability, corrupt operand `A` (~10% of transactions) or force an out-of-range, undefined opcode (`4'b1100`, ~9% of transactions).
+- `ALU_error_injection_test extends ALU_test` attaches the callback to the running driver instance (`uvm_callbacks#(ALU_driver, ALU_driver_cb)::add(envir.agn.drv, err_cb)`) in `connect_phase` — not `build_phase`, since the driver instance doesn't exist yet at that point in the phase hierarchy — leaving `ALU_test` itself completely untouched.
+
+**Result: 1000 / 1000 PASS, 0 FAIL** — even with the callback active. Two things make this a meaningful pass rather than a no-op test:
+
+1. **Undefined-opcode transactions still pass, for a documented reason.** Both the DUT (`default: Result = 8'b0;` in the top-level mux) and the reference model (`default: res = 8'd0;`) handle an out-of-range opcode identically, so the scoreboard correctly reports a match. This is itself a useful confirmation that the DUT's default behavior and the reference model's default behavior are consistent — not something to be taken for granted.
+2. **The functional coverage's `illegal_bins` correctly fired.** Every time the callback forced the invalid opcode, the coverage engine raised an error for hitting `Op_cp`'s `illegal_bins`, exactly as designed — proof that the coverage model actively flags out-of-spec inputs rather than silently ignoring them. (The scoreboard log shows these transactions with an empty operation name, e.g. `PASS [] : A=13 | B=15 -> Res=0` — `alu_op_e'(4'b1100)` casts to a value with no associated enumerator, so `.name()` returns an empty string, which is expected SystemVerilog behavior for unnamed enum values.)
+
 ## Project structure
 
-| Folder/File                      | Description                                                                                                     |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `Design/ALU_Design/ALU_Design.v` | The ALU DUT top-level module (Verilog)                                                                          |
-| `Design/Operations_Design/`      | Individual sub-module RTL (adder/subtractor, multiplier, comparator, gray-code converters, shifter, logic unit) |
-| `Testbench/ALU_pkg.sv`           | Package including all UVM class files, in dependency order                                                      |
-| `Testbench/ALU_inf.sv`           | Virtual interface (`A`, `B`, `Opcode`, `Result`)                                                                |
-| `Testbench/ALU_seq_item.sv`      | Transaction class (`ALU_seq_item`), with opcode/value constraints                                               |
-| `Testbench/ALU_sequencer.sv`     | Sequencer                                                                                                       |
-| `Testbench/ALU_sequence.sv`      | Sequence generating constrained-random transactions                                                             |
-| `Testbench/ALU_driver.sv`        | Driver                                                                                                          |
-| `Testbench/ALU_monitor.sv`       | Monitor                                                                                                         |
-| `Testbench/ALU_agent.sv`         | Agent (driver + monitor + sequencer)                                                                            |
-| `Testbench/ALU_ref_model.sv`     | Reference (golden) model, traced from DUT sub-module RTL                                                        |
-| `Testbench/ALU_scoreboard.sv`    | Scoreboard                                                                                                      |
-| `Testbench/ALU_coverage.sv`      | Functional coverage collector                                                                                   |
-| `Testbench/ALU_env.sv`           | Top-level environment class, connects agent, scoreboard, and coverage                                           |
-| `Testbench/ALU_test.sv`          | Test class, starts the sequence on the environment's sequencer                                                  |
-| `Testbench/ALU_top.sv`           | Testbench top: interface instantiation, DUT connection, `run_test()`                                            |
+| Folder/File                             | Description                                                                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Design/ALU_Design/ALU_Design.v`        | The ALU DUT top-level module (Verilog)                                                                          |
+| `Design/Operations_Design/`             | Individual sub-module RTL (adder/subtractor, multiplier, comparator, gray-code converters, shifter, logic unit) |
+| `Testbench/ALU_pkg.sv`                  | Package including all UVM class files, in dependency order                                                      |
+| `Testbench/ALU_inf.sv`                  | Virtual interface (`A`, `B`, `Opcode`, `Result`)                                                                |
+| `Testbench/ALU_seq_item.sv`             | Transaction class (`ALU_seq_item`), with opcode/value constraints                                               |
+| `Testbench/ALU_sequencer.sv`            | Sequencer                                                                                                       |
+| `Testbench/ALU_sequence.sv`             | Sequence generating constrained-random transactions                                                             |
+| `Testbench/ALU_driver.sv`               | Driver                                                                                                          |
+| `Testbench/ALU_driver_cb.sv`            | `uvm_callback` base class for the driver (empty `modify_pkt()` hook)                                            |
+| `Testbench/ALU_monitor.sv`              | Monitor                                                                                                         |
+| `Testbench/ALU_agent.sv`                | Agent (driver + monitor + sequencer)                                                                            |
+| `Testbench/ALU_ref_model.sv`            | Reference (golden) model, traced from DUT sub-module RTL                                                        |
+| `Testbench/ALU_scoreboard.sv`           | Scoreboard                                                                                                      |
+| `Testbench/ALU_coverage.sv`             | Functional coverage collector                                                                                   |
+| `Testbench/ALU_env.sv`                  | Top-level environment class, connects agent, scoreboard, and coverage                                           |
+| `Testbench/ALU_test.sv`                 | Test class, starts the sequence on the environment's sequencer                                                  |
+| `Testbench/ALU_error_inject_cb.sv`      | Callback overriding `modify_pkt()` to corrupt an operand or force an invalid opcode                             |
+| `Testbench/ALU_error_injection_test.sv` | Test extending `ALU_test`, attaching `ALU_error_inject_cb` to the driver instance                               |
+| `Testbench/ALU_top.sv`                  | Testbench top: interface instantiation, DUT connection, `run_test()`                                            |
 
 ## How to run
 
@@ -98,11 +119,13 @@ Following the same methodology used in the [RAM project](https://github.com/Dani
 5. Run behavioral simulation (`launch_simulation` / Run All). Vivado launches with a default runtime of 1000 ns, which is not enough to complete all 1000 randomized transactions plus their propagation delays and the sequence's drain time.
 6. **After** the initial launch, type `run -all` in the Tcl console and press Enter, so the simulation runs until UVM itself calls `$finish` (after `report_phase`/`final_phase`), instead of stopping at a fixed, guessed time value:
 
-   ![Tcl run -all](results/main/RunAll.png)
+  ![Tcl run -all](results/main/RunAll.png)
 
 7. Check the Tcl console for the scoreboard summary (PASS/FAIL counts) and the functional coverage percentage.
 
 To reproduce the mutation-testing results (once added), check out the relevant branch (e.g. `git checkout bug-injection/<fault-name>`) before running the simulation, and compare against `main`.
+
+- Note: `ALU_top.sv` contains two `run_test()` calls: `run_test("ALU_test")` (the main regression, 1000/1000 PASS) and `run_test("ALU_error_injection_test")` (the callback-based error injection demo). Only one should be uncommented at a time — comment out the other before running.
 
 ## Git workflow
 
@@ -152,3 +175,21 @@ This project uses branches to isolate experiments from the main, verified codeba
 ### Example transactions per operation
 
 ![Operations](results/comparator-lt-gt-swap/Operations.png)
+
+## Stimulus-level error injection (ALU_error_injection_test)
+
+### Summary
+
+![Summary](results/error_injection/Summary.png)
+
+_(1000/1000 PASS — see the "Stimulus-level error injection via UVM callbacks" section above for why this is a meaningful result, not a no-op test.)_
+
+### Example transactions, including invalid-opcode injections
+
+![Operations](results/error_injection/Operations.png)
+
+_(Note the transactions with an empty operation name, e.g. `PASS [] : A=13 | B=14 -> Res=0` — these are the injected out-of-range opcode transactions; the empty name is expected, since `ALU_op_e'(4'b1100)` has no associated named enumerator.)_
+
+### Example of illegal bins error
+
+![Operations](results/error_injection/il_bins.png)
