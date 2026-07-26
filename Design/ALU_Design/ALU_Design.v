@@ -69,13 +69,13 @@ module ALU_Design(input [3:0] A,
         case (Opcode)
             4'b0000 : Result = {3'b000,carry_out,sum_dif_result};
             4'b0001 : Result = {3'b000,carry_out,sum_dif_result};
-            4'b0010 : Result = multiplier_result;
-            4'b0011 : Result = {5'b00000,lt,eq,gt};
+            /*4'b0010*/4'b0011 : Result = multiplier_result;
+            /*4'b0011*/4'b0010 : Result = {5'b00000,lt,eq,gt};
             4'b0100 : Result = {4'b0000,binary_gray_result};
             4'b0101 : Result = {4'b0000,gray_binary_result};
             4'b0110 : Result = {4'b0000,shifter_result};
-            4'b0111 : Result = {4'b0000,shifter_result};
-            4'b1000 : Result = {4'b0000,logic_result};
+            /*4'b0111*/4'b1000 : Result = {4'b0000,shifter_result};
+            /*4'b1000*/4'b0111 : Result = {4'b0000,logic_result};
             4'b1001 : Result = {4'b0000,logic_result};
             4'b1010 : Result = {4'b0000,logic_result};
             4'b1011 : Result = {4'b0000,logic_result};
